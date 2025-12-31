@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Gimi AI</title>
+    
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+
+    <div class="main-container">
+        <header>
+            <div class="brand">
+                <img src="{{ url_for('static', filename='logo.jpg') }}" alt="Gimi AI" class="brand-logo"> 
+            </div>
+            <div class="header-icon" onclick="location.reload()">
+                <i class="fa-regular fa-pen-to-square"></i>
+            </div>
+        </header>
+
+        <main id="chat-stream"></main>
+
+        <footer>
+            <input type="file" id="input-file-hidden" style="display: none;">
+            
+            <div class="input-zone">
+                <button class="btn-round" id="action-attach">
+                    <i class="fa-solid fa-plus"></i>
+                </button>
+                
+                <div class="text-capsule">
+                    <input type="text" id="input-msg" placeholder="Message" autocomplete="off">
+                    <i class="fa-solid fa-microphone icon-mic" id="action-mic"></i>
+                </div>
+
+                <button class="btn-round btn-send" id="action-send">
+                    <i class="fa-solid fa-arrow-up"></i>
+                </button>
+            </div>
+        </footer>
+    </div>
+
+    <div id="view-modal" class="modal-overlay">
+        <img class="modal-img" id="view-full-img">
+    </div>
+
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
+</body>
+</html>

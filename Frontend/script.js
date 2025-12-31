@@ -1,9 +1,13 @@
+// --- FAILSAFE MOCK ---
+// Agar internet na ho to ye line code ko crash hone se bachayegi
+if (typeof marked === 'undefined') { window.marked = { parse: (t) => t }; }
+
 document.addEventListener('DOMContentLoaded', () => {
     console.log("System Online.");
 
     const chatZone = document.getElementById('chat-stream');
     const inpField = document.getElementById('input-msg');
-    const btnSend = document.getElementById('action-send'); // Ab ye Icon hai
+    const btnSend = document.getElementById('action-send');
     const btnMic = document.getElementById('action-mic');
     const btnAttach = document.getElementById('action-attach');
     const hiddenFile = document.getElementById('input-file-hidden');
@@ -12,13 +16,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let recognition;
     let isAutoMode = false;
 
-    // Helper: Safe Markdown
-    const parseMarkdown = (text) => {
-        try {
-            return (typeof marked !== 'undefined') ? marked.parse(text) : text;
-        } catch (e) { return text; }
-    };
-
+    // Welcome Msg
     setTimeout(() => pushMsg("Hello! I am ready.", 'bot'), 500);
 
     const scrollDown = () => chatZone.scrollTo({ top: chatZone.scrollHeight, behavior: 'smooth' });
@@ -35,41 +33,38 @@ document.addEventListener('DOMContentLoaded', () => {
         audio.onended = () => { if (isAutoMode) startRecognition(); };
     };
 
-    // --- INPUT LOGIC CHANGE ---
-    // Jab user type kare, tabhi Send button dikhe, warna Mic dikhe
+    // --- BUTTON LOGIC ---
     inpField.addEventListener('input', () => {
         const txt = inpField.value.trim();
         if(txt) {
-            btnSend.classList.add('ready'); // CSS: display: flex
-            btnMic.style.display = 'none';  // Type karte waqt Mic chupa do (Optional, agar jagah kam ho)
+            btnSend.classList.add('ready');
         } else {
-            btnSend.classList.remove('ready'); // CSS: display: none
-            btnMic.style.display = 'flex';
+            btnSend.classList.remove('ready');
         }
     });
 
     const triggerSend = () => {
         const txt = inpField.value.trim();
-        if(txt) {
-            isAutoMode = false;
-            btnMic.classList.remove('active');
-            stopRecognition();
-            runCmd(txt, false);
-            
-            // Reset Icons
-            btnSend.classList.remove('ready');
-            btnMic.style.display = 'flex';
-        }
+        if(!txt) return; // Empty text mat bhejo
+
+        isAutoMode = false;
+        btnMic.classList.remove('active');
+        stopRecognition();
+        
+        runCmd(txt, false);
+        btnSend.classList.remove('ready');
     };
 
-    btnSend.addEventListener('click', triggerSend);
-    inpField.addEventListener('keydown', (e) => { 
+    // DIRECT CLICK LISTENERS
+    btnSend.onclick = triggerSend;
+    inpField.onkeydown = (e) => { 
         if (e.key === 'Enter') { e.preventDefault(); triggerSend(); }
-    });
+    };
 
+    // ATTACH
     if(btnAttach && hiddenFile) {
-        btnAttach.addEventListener('click', () => hiddenFile.click());
-        hiddenFile.addEventListener('change', async () => {
+        btnAttach.onclick = () => hiddenFile.click();
+        hiddenFile.onchange = async () => {
             if (!hiddenFile.files[0]) return;
             const fd = new FormData();
             fd.append('file', hiddenFile.files[0]);
@@ -80,11 +75,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 pushMsg(d.message, 'bot');
             } catch { pushMsg("Upload failed.", 'bot'); }
             hiddenFile.value = ''; 
-        });
+        };
     }
 
+    // MIC SETUP
     const startRecognition = () => {
-        if (!window.webkitSpeechRecognition) return alert("Mic error.");
+        if (!window.webkitSpeechRecognition) return alert("Mic Error");
         if (recognition && recognition.started) return;
         recognition = new webkitSpeechRecognition();
         recognition.lang = 'en-IN'; 
@@ -96,7 +92,6 @@ document.addEventListener('DOMContentLoaded', () => {
             const t = e.results[e.results.length-1][0].transcript;
             inpField.value = t;
             btnSend.classList.add('ready');
-            btnMic.style.display = 'none';
             runCmd(t, true); 
         };
         try { recognition.start(); } catch(e) {}
@@ -108,25 +103,31 @@ document.addEventListener('DOMContentLoaded', () => {
         if (recognition) recognition.stop();
     };
 
-    btnMic.addEventListener('click', () => {
+    btnMic.onclick = () => {
         if (isAutoMode) { stopRecognition(); } 
         else { isAutoMode = true; startRecognition(); }
-    });
+    };
 
+    // MSG HANDLER
     const pushMsg = (txt, role, isImg=false) => {
         const row = document.createElement('div');
         row.className = `msg-row row-${role}`;
         const bub = document.createElement('div');
         bub.className = `bubble bub-${role}`;
+        
         if(isImg) {
             bub.innerHTML = `Generated Image:<br><img src='data:image/jpeg;base64,${txt}' onclick="document.getElementById('view-full-img').src=this.src;document.getElementById('view-modal').style.display='flex'">`;
         } else {
-            bub.innerHTML = parseMarkdown(txt);
+            // Simple Parse
+            bub.innerHTML = (window.marked) ? window.marked.parse(txt) : txt;
         }
+        
         row.appendChild(bub);
         chatZone.appendChild(row);
+        
         if (role === 'user') scrollDown();
         else row.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        
         return row; 
     };
 
@@ -157,123 +158,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 });
-    if(modal) {
-        window.closeModal = () => modal.style.display = 'none';
-        modal.onclick = () => modal.style.display = 'none';
-    }
-
-    // Audio Playback
-    const playAudio = (b64) => {
-        if (!b64) {
-            if (isAutoMode) startRecognition();
-            return;
-        }
-        const audio = new Audio("data:audio/mp3;base64," + b64);
-        audio.play().catch(e => console.warn("Audio blocked:", e));
-        audio.onended = () => {
-            if (isAutoMode) startRecognition();
-        };
-    };
-
-    // Input Handling
-    inpField.addEventListener('input', () => {
-        if(inpField.value.trim()) btnSend.classList.add('ready');
-        else btnSend.classList.remove('ready');
-    });
-
-    const triggerSend = () => {
-        const txt = inpField.value.trim();
-        if(txt) {
-            isAutoMode = false;
-            if(btnMic) btnMic.classList.remove('active');
-            stopRecognition();
-            runCmd(txt, false);
-        }
-    };
-
-    if(btnSend) {
-        btnSend.addEventListener('click', triggerSend);
-    }
-    
-    if(inpField) {
-        inpField.addEventListener('keydown', (e) => { 
-            if (e.key === 'Enter') { 
-                e.preventDefault(); 
-                triggerSend(); 
-            }
-        });
-    }
-
-    // File Attachment Logic
-    if(btnAttach && hiddenFile) {
-        btnAttach.addEventListener('click', () => hiddenFile.click());
-        hiddenFile.addEventListener('change', async () => {
-            if (!hiddenFile.files[0]) return;
-            const fd = new FormData();
-            fd.append('file', hiddenFile.files[0]);
-            pushMsg(`Reading ${hiddenFile.files[0].name}...`, 'user');
-            try {
-                const r = await fetch('/upload_file', { method: 'POST', body: fd });
-                const d = await r.json();
-                pushMsg(d.message, 'bot');
-            } catch { pushMsg("Upload failed.", 'bot'); }
-            hiddenFile.value = ''; 
-        });
-    }
-
-    // MIC LOGIC
-    const startRecognition = () => {
-        if (!window.webkitSpeechRecognition) return alert("Mic not supported.");
-        if (recognition && recognition.started) return;
-
-        recognition = new webkitSpeechRecognition();
-        recognition.lang = 'en-IN'; 
-        recognition.interimResults = false;
-        recognition.started = true;
-
-        recognition.onstart = () => { if(btnMic) btnMic.classList.add('active'); };
-        recognition.onend = () => { recognition.started = false; };
-        recognition.onresult = (e) => {
-            const t = e.results[e.results.length-1][0].transcript;
-            inpField.value = t;
-            btnSend.classList.add('ready');
-            runCmd(t, true); 
-        };
-        try { recognition.start(); } catch(e) { console.log(e); }
-    };
-
-    const stopRecognition = () => {
-        isAutoMode = false;
-        if(btnMic) btnMic.classList.remove('active');
-        if (recognition) recognition.stop();
-    };
-
-    if(btnMic) {
-        btnMic.addEventListener('click', () => {
-            if (isAutoMode) { stopRecognition(); } 
-            else { isAutoMode = true; startRecognition(); }
-        });
-    }
-
-    // --- MAIN MESSAGE FUNCTION (UPDATED) ---
-    const pushMsg = (txt, role, isImg=false) => {
-        const row = document.createElement('div');
-        row.className = `msg-row row-${role}`;
-        const bub = document.createElement('div');
-        bub.className = `bubble bub-${role}`;
-        
-        if(isImg) {
-            bub.innerHTML = `Generated Image:<br><img src='data:image/jpeg;base64,${txt}' onclick="document.getElementById('view-full-img').src=this.src;document.getElementById('view-modal').style.display='flex'">`;
-        } else {
-            bub.innerHTML = parseMarkdown(txt);
-        }
-        
-        row.appendChild(bub);
-        chatZone.appendChild(row);
-        
-        // --- SMART SCROLL LOGIC ---
-        // User ka msg -> Bottom scroll
-        // Bot ka msg -> Start of message (Taaki user upar se padh sake)
+> Start of message (Taaki user upar se padh sake)
         if (role === 'user') {
             scrollDown();
         } else {

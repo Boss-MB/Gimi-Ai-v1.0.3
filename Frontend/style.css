@@ -1,242 +1,55 @@
-/* --- GLOBAL RESET --- */
-* { margin: 0; padding: 0; box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; outline: none !important; -webkit-tap-highlight-color: transparent; }
-body { background-color: #000000; color: white; height: 100vh; display: flex; justify-content: center; overflow: hidden; }
+/* --- GLOBAL --- */
+* { margin: 0; padding: 0; box-sizing: border-box; font-family: sans-serif; outline: none; -webkit-tap-highlight-color: transparent; }
+body { background: #000; color: white; height: 100vh; display: flex; justify-content: center; overflow: hidden; }
 
-.main-container { width: 100%; height: 100vh; display: flex; flex-direction: column; background: #000000; position: relative; }
+.main-container { width: 100%; height: 100vh; display: flex; flex-direction: column; position: relative; }
 
-/* --- HEADER --- */
-header { padding: 0 15px; display: flex; justify-content: space-between; align-items: center; height: 55px; z-index: 50; background: #000000; border-bottom: 1px solid #1a1a1a; flex-shrink: 0; }
-.brand-logo { height: 28px; width: auto; object-fit: contain; }
-.header-icon { font-size: 1.2rem; cursor: pointer; padding: 10px; color: #b0b0b0; }
+/* HEADER */
+header { padding: 0 15px; display: flex; justify-content: space-between; align-items: center; height: 55px; background: #000; border-bottom: 1px solid #1a1a1a; flex-shrink: 0; }
+.brand-logo { height: 28px; object-fit: contain; }
+.header-icon { font-size: 1.2rem; padding: 10px; color: #b0b0b0; cursor: pointer; }
 
-/* --- CHAT AREA --- */
-#chat-stream { 
-    flex: 1; 
-    overflow-y: auto; 
-    padding: 15px; 
-    display: flex; 
-    flex-direction: column; 
-    gap: 15px; 
-    padding-bottom: 10px; 
-}
-
-.msg-row { display: flex; width: 100%; animation: fadeUp 0.3s ease; }
-@keyframes fadeUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-
+/* CHAT AREA */
+#chat-stream { flex: 1; overflow-y: auto; padding: 15px; display: flex; flex-direction: column; gap: 15px; padding-bottom: 10px; }
+.msg-row { display: flex; width: 100%; }
 .row-user { justify-content: flex-end; }
 .row-bot { justify-content: flex-start; }
 
-/* Bubble Styling */
-.bubble { 
-    padding: 12px 14px; 
-    font-size: 0.96rem; 
-    line-height: 1.5; 
-    word-wrap: break-word; 
-    border-radius: 18px;
-}
+.bubble { padding: 12px 14px; font-size: 0.96rem; line-height: 1.5; border-radius: 18px; word-wrap: break-word; }
+.bub-user { background: #262626; color: white; border-top-right-radius: 4px; max-width: 85%; margin-left: auto; }
+.bub-bot { background: transparent; color: white; width: 100%; padding-left: 0; }
 
-.bub-user { 
-    background: #262626; 
-    color: white; 
-    border-top-right-radius: 4px; 
-    max-width: 85%; 
-    margin-left: auto; 
-}
+/* Simple Formatting */
+.bubble p { margin-bottom: 10px; }
+.bubble strong { font-weight: 700; color: white; }
+.bubble img { width: 100%; border-radius: 10px; margin-top: 10px; border: 1px solid #333; }
 
-.bub-bot { 
-    background: transparent; 
-    color: #ffffff; 
-    width: 100%; 
-    max-width: 100%;
-    padding-left: 0;
-}
-
-/* --- MARKDOWN: PURE WHITE --- */
-.bubble p { margin-bottom: 10px; text-align: left; }
-.bubble strong { color: #ffffff; font-weight: 700; }
-.bubble h1, .bubble h2, .bubble h3 { 
-    color: #ffffff !important; 
-    font-weight: 700; margin-top: 15px; margin-bottom: 8px; line-height: 1.2; font-size: 1.1rem;
-}
-.bubble ul, .bubble ol { margin-left: 20px; margin-bottom: 10px; color: #ffffff; }
-.bubble li { margin-bottom: 5px; }
-.bubble pre { background: #1a1a1a; padding: 10px; border-radius: 8px; overflow-x: auto; margin: 10px 0; border: 1px solid #333; }
-.bubble code { font-family: monospace; color: #ff79c6; background: rgba(255,255,255,0.1); padding: 2px 4px; border-radius: 4px; }
-.bubble img { width: 100%; border-radius: 12px; margin-top: 10px; border: 1px solid #333; }
-
-/* --- RESPONSIVE FOOTER --- */
-footer { 
-    background: rgba(0,0,0,0.96); 
-    border-top: 1px solid #1a1a1a;
-    padding: 10px; 
-    width: 100%;
-    z-index: 100;
-    flex-shrink: 0; 
-}
-
-.input-zone { 
-    display: flex; 
-    align-items: center; 
-    gap: 8px; /* Gap between attach button and capsule */
-    width: 100%;
-}
-
-/* Attach Button: Fixed Size */
-.btn-round { 
-    width: 42px; height: 42px; 
-    border-radius: 50%; border: none; 
-    display: flex; justify-content: center; align-items: center; 
-    font-size: 1.2rem; cursor: pointer; 
-    flex-shrink: 0;  /* IMPORTANT: Ye mobile pe dabega nahi */
-    background: #262626; color: #a0a0a0; 
-    pointer-events: auto;
-}
-
-/* Capsule: Flexible Width */
-.text-capsule { 
-    flex: 1; /* IMPORTANT: Ye bachi hui sari jagah lega */
-    background: #262626; 
-    border-radius: 22px; 
-    padding: 0 12px; 
-    display: flex; 
-    align-items: center; 
-    height: 44px; 
-    border: 1px solid transparent; 
-    transition: 0.2s;
-    min-width: 0; /* Flexbox overflow fix */
-}
-
-.text-capsule:focus-within { border-color: #444; background: #2a2a2a; }
-
-/* Input Field */
-input { 
-    flex: 1; 
-    background: transparent; 
-    border: none; 
-    color: white; 
-    font-size: 1rem; 
-    height: 100%; 
-    min-width: 10px; 
-    padding-right: 5px;
-    pointer-events: auto;
-}
-
-/* Icons inside Capsule */
-.icon-btn { 
-    padding: 8px; 
-    font-size: 1.2rem; 
-    cursor: pointer; 
-    color: #888; 
-    flex-shrink: 0; 
-    display: flex; align-items: center; justify-content: center;
-    pointer-events: auto;
-}
-
-#action-send { color: #ffffff; margin-left: 5px; }
-
-/* Modal */
-.modal-overlay { display: none; position: fixed; z-index: 10000; left:0; top:0; width:100%; height:100%; background: rgba(0,0,0,0.95); justify-content: center; align-items: center; }
-.modal-img { max-width: 100%; max-height: 100%; object-fit: contain; }
-}
-
-/* Bot Msg */
-.bub-bot { 
-    background: transparent; 
-    color: #ffffff; 
-    width: 100%; 
-    max-width: 100%;
-}
-
-/* --- MARKDOWN PURE WHITE --- */
-.bubble p { margin-bottom: 12px; }
-.bubble strong { color: #ffffff; font-weight: 700; }
-.bubble h1, .bubble h2, .bubble h3 { 
-    color: #ffffff !important; 
-    font-weight: 700; 
-    margin-top: 20px; 
-    margin-bottom: 10px; 
-    line-height: 1.3;
-}
-.bubble h3 { font-size: 1.15rem; }
-.bubble ul, .bubble ol { margin-left: 20px; margin-bottom: 10px; color: #ffffff; }
-.bubble li { margin-bottom: 6px; padding-left: 5px; }
-.bubble pre { background: #1a1a1a; padding: 10px; border-radius: 8px; overflow-x: auto; margin: 10px 0; border: 1px solid #333; }
-.bubble code { font-family: monospace; color: #ff79c6; background: rgba(255,255,255,0.1); padding: 2px 4px; border-radius: 4px; }
-.bubble img { width: 100%; border-radius: 12px; margin-top: 10px; border: 1px solid #333; }
-
-/* --- FOOTER FIX --- */
-footer { 
-    position: absolute; 
-    bottom: 0; left: 0; right: 0; 
-    padding: 10px 10px 15px 10px; 
-    background: rgba(0,0,0,0.95); 
-    z-index: 9999; 
-}
-
-.input-zone { display: flex; align-items: center; gap: 8px; }
+/* FOOTER (Responsive & Clickable) */
+footer { background: #000; border-top: 1px solid #1a1a1a; padding: 10px; width: 100%; flex-shrink: 0; }
+.input-zone { display: flex; align-items: center; gap: 8px; width: 100%; }
 
 .btn-round { 
-    width: 40px; height: 40px; 
-    border-radius: 50%; border: none; 
+    width: 42px; height: 42px; border-radius: 50%; border: none; 
     display: flex; justify-content: center; align-items: center; 
     font-size: 1.2rem; cursor: pointer; flex-shrink: 0; 
     background: #262626; color: #a0a0a0; 
-    pointer-events: auto; /* Clickable Fix */
+    pointer-events: auto; /* Click fix */
 }
 
-/* Input Capsule */
 .text-capsule { 
-    flex: 1; 
-    background: #262626; 
-    border-radius: 24px; 
-    padding: 5px 15px; 
-    display: flex; 
-    align-items: center; 
-    height: 46px; 
-    border: 1px solid transparent; 
-    transition: 0.3s;
-    gap: 5px;
+    flex: 1; background: #262626; border-radius: 22px; padding: 0 10px; 
+    display: flex; align-items: center; height: 44px; min-width: 0;
 }
 
-.text-capsule:focus-within { border-color: #444; background: #2a2a2a; }
+input { flex: 1; background: transparent; border: none; color: white; font-size: 1rem; height: 100%; min-width: 10px; }
 
-input { 
-    flex: 1; 
-    background: transparent; 
-    border: none; 
-    color: white; 
-    font-size: 1rem; 
-    min-width: 0; 
-    height: 100%; 
-    pointer-events: auto;
-}
-
-/* Icons Inside Capsule */
 .icon-btn { 
-    padding: 8px; 
-    font-size: 1.2rem; 
-    cursor: pointer; 
-    color: #777; 
-    display: flex; 
-    align-items: center; 
-    justify-content: center;
-    transition: 0.2s;
-    pointer-events: auto; /* IMPORTANT: Ensures clicks work */
+    padding: 8px; font-size: 1.2rem; cursor: pointer; color: #888; flex-shrink: 0; 
+    display: flex; align-items: center; justify-content: center;
+    pointer-events: auto; /* Click fix */
 }
 
-/* Mic Active */
-.icon-btn.active { color: #ff4757; transform: scale(1.1); }
+#action-send { color: #fff; margin-left: 5px; }
 
-/* Send Button Style */
-#action-send {
-    display: flex; /* Hamesha dikhega */
-    opacity: 0.5;  /* Thoda dhundhla */
-}
-#action-send.ready {
-    opacity: 1;    /* Bright ho jayega jab text hoga */
-    color: #ffffff;
-}
-
-/* Modal */
 .modal-overlay { display: none; position: fixed; z-index: 10000; left:0; top:0; width:100%; height:100%; background: rgba(0,0,0,0.95); justify-content: center; align-items: center; }
 .modal-img { max-width: 100%; max-height: 100%; object-fit: contain; }

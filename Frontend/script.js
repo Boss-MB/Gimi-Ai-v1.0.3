@@ -1,5 +1,6 @@
-document.addEventListener('DOMContentLoaded', () => {
-    console.log("Simple JS Loaded.");
+// Window Load hone ke baad hi code chalega (Safety check)
+window.onload = function() {
+    console.log("Engine Started.");
 
     const chatZone = document.getElementById('chat-stream');
     const inpField = document.getElementById('input-msg');
@@ -9,31 +10,171 @@ document.addEventListener('DOMContentLoaded', () => {
     const hiddenFile = document.getElementById('input-file-hidden');
     const modal = document.getElementById('view-modal');
 
-    let recognition;
     let isAutoMode = false;
+    let recognition = null;
 
-    // Simple Formatter (Jugad for formatting)
-    const formatText = (text) => {
-        if(!text) return "";
-        // Replace newlines with break tags and bold text
-        return text.replace(/\n/g, '<br>').replace(/\*\*(.*?)\*\*/g, '<b>$1</b>');
-    };
+    // --- WELCOME MESSAGE (Direct Call) ---
+    // Koi library nahi chahiye, direct text insert hoga
+    setTimeout(() => {
+        addMessage("Hello! I am ready.", 'bot');
+    }, 500);
 
-    setTimeout(() => pushMsg("Hello! Ready.", 'bot'), 500);
+    // --- HELPER: Add Message ---
+    function addMessage(text, role, isImage) {
+        const row = document.createElement('div');
+        row.className = 'msg-row row-' + role;
+        
+        const bubble = document.createElement('div');
+        bubble.className = 'bubble bub-' + role;
 
-    const scrollDown = () => {
-        if(chatZone) chatZone.scrollTo({ top: chatZone.scrollHeight, behavior: 'smooth' });
-    };
+        if (isImage) {
+            bubble.innerHTML = 'Generated Image:<br><img src="data:image/jpeg;base64,' + text + '" onclick="viewImage(this.src)">';
+        } else {
+            // Simple formatter: Bold aur Newline ko convert karta hai
+            let formatted = text.replace(/\n/g, '<br>').replace(/\*\*(.*?)\*\*/g, '<b>$1</b>');
+            bubble.innerHTML = formatted;
+        }
 
-    if(modal) {
-        window.closeModal = () => modal.style.display = 'none';
-        modal.onclick = () => modal.style.display = 'none';
+        row.appendChild(bubble);
+        chatZone.appendChild(row);
+        
+        // Scroll Logic
+        if(role === 'user') {
+            chatZone.scrollTo({ top: chatZone.scrollHeight, behavior: 'smooth' });
+        } else {
+            row.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+        
+        return row;
     }
 
-    // MAIN SEND FUNCTION
-    const triggerSend = () => {
-        const txt = inpField.value.trim();
-        if(!txt) return;
+    // --- SEND BUTTON LOGIC ---
+    // Direct 'onclick' assign kiya hai taaki koi listener issue na ho
+    btnSend.onclick = function() {
+        sendMessage();
+    };
+
+    // Enter Key Logic
+    inpField.onkeydown = function(e) {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            sendMessage();
+        }
+    };
+
+    function sendMessage() {
+        const text = inpField.value.trim();
+        if (!text) return;
+
+        inpField.value = '';
+        
+        // Stop Mic if running
+        isAutoMode = false;
+        if(recognition) try { recognition.stop(); } catch(e){}
+        btnMic.style.color = '#888';
+
+        addMessage(text, 'user');
+        
+        // Backend Call
+        const loadingRow = addMessage("Thinking...", 'bot');
+        
+        fetch('/execute_command', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ command: text, is_voice: false })
+        })
+        .then(res => res.json())
+        .then(data => {
+            loadingRow.remove();
+            if(data.is_image) {
+                addMessage(data.image_data, 'bot', true);
+            } else {
+                addMessage(data.response, 'bot');
+            }
+            if(data.audio_data) playAudio(data.audio_data);
+        })
+        .catch(err => {
+            loadingRow.remove();
+            addMessage("Error: Check Terminal", 'bot');
+        });
+    }
+
+    // --- ATTACH BUTTON LOGIC ---
+    btnAttach.onclick = function() {
+        hiddenFile.click();
+    };
+
+    hiddenFile.onchange = function() {
+        if (hiddenFile.files.length > 0) {
+            const file = hiddenFile.files[0];
+            addMessage("Reading " + file.name + "...", 'user');
+            
+            const formData = new FormData();
+            formData.append('file', file);
+            
+            fetch('/upload_file', { method: 'POST', body: formData })
+            .then(res => res.json())
+            .then(data => addMessage(data.message, 'bot'))
+            .catch(err => addMessage("Upload Failed", 'bot'));
+            
+            hiddenFile.value = ''; // Reset
+        }
+    };
+
+    // --- MIC LOGIC (Simplified) ---
+    btnMic.onclick = function() {
+        if (!('webkitSpeechRecognition' in window)) {
+            alert("Mic not supported in this browser.");
+            return;
+        }
+
+        if (isAutoMode) {
+            // STOP
+            isAutoMode = false;
+            if (recognition) recognition.stop();
+            btnMic.style.color = '#888';
+        } else {
+            // START
+            isAutoMode = true;
+            recognition = new webkitSpeechRecognition();
+            recognition.lang = 'en-IN';
+            recognition.interimResults = false;
+
+            recognition.onstart = function() {
+                btnMic.style.color = '#ff4757';
+            };
+            
+            recognition.onend = function() {
+                if(!isAutoMode) btnMic.style.color = '#888';
+            };
+
+            recognition.onresult = function(event) {
+                const transcript = event.results[event.results.length - 1][0].transcript;
+                inpField.value = transcript;
+                sendMessage(); // Auto send on speak
+            };
+
+            recognition.start();
+        }
+    };
+
+    // --- AUDIO PLAYER ---
+    function playAudio(base64Audio) {
+        if (!base64Audio) return;
+        const audio = new Audio("data:audio/mp3;base64," + base64Audio);
+        audio.play().catch(e => console.log("Audio play error", e));
+    }
+
+    // --- MODAL IMAGE VIEW ---
+    window.viewImage = function(src) {
+        document.getElementById('view-full-img').src = src;
+        modal.style.display = 'flex';
+    };
+    
+    modal.onclick = function() {
+        modal.style.display = 'none';
+    };
+};
 
         // Reset everything
         isAutoMode = false;

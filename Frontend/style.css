@@ -1,39 +1,39 @@
-/* --- GLOBAL --- */
-* { margin: 0; padding: 0; box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; outline: none !important; -webkit-tap-highlight-color: transparent; }
-body { background-color: #000000; color: white; height: 100vh; display: flex; justify-content: center; overflow: hidden; }
-
-.main-container { width: 100%; height: 100vh; display: flex; flex-direction: column; background: #000000; position: relative; }
-
-/* --- HEADER --- */
-header { padding: 10px 15px; display: flex; justify-content: space-between; align-items: center; height: 54px; z-index: 50; background: #000000; border-bottom: 1px solid #1a1a1a; }
-.brand-logo { height: 28px; width: auto; max-width: 65%; object-fit: contain; }
-.header-icon { font-size: 1.3rem; cursor: pointer; padding: 8px; color: #b0b0b0; }
-
 /* --- CHAT AREA --- */
-#chat-stream { flex: 1; overflow-y: auto; padding: 15px; display: flex; flex-direction: column; gap: 20px; padding-bottom: 100px; }
-.msg-row { display: flex; width: 100%; animation: fadeUp 0.3s ease; }
-@keyframes fadeUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+/* Bubble ki max-width badha di hai */
+.bubble { 
+    max-width: 95%; /* Pehle 88% tha, ab 95% kiya taaki zyada jagah le */
+    padding: 12px 10px; /* Thodi side padding kam ki taaki text fail sake */
+    font-size: 0.98rem; /* Font thoda bada kiya readability ke liye */
+    line-height: 1.7; 
+    border-radius: 12px; 
+    word-wrap: break-word; 
+    position: relative; 
+}
 
-.row-user { justify-content: flex-end; }
-.row-bot { justify-content: flex-start; }
+/* User ka message right side rahega aur thoda chhota dikhega (Standard chat look) */
+.bub-user { 
+    background: #262626; 
+    color: white; 
+    border-top-right-radius: 4px; 
+    max-width: 85%; /* User ka msg thoda compact sahi lagta hai */
+    margin-left: auto; /* Right align confirm karne ke liye */
+}
 
-.bubble { max-width: 88%; padding: 12px 18px; font-size: 0.95rem; line-height: 1.6; border-radius: 18px; word-wrap: break-word; position: relative; }
-.bub-user { background: #262626; color: white; border-top-right-radius: 4px; }
-.bub-bot { background: transparent; color: #e0e0e0; padding-left: 0; }
+/* --- BOT MESSAGE FULL WIDTH FIX --- */
+.bub-bot { 
+    background: transparent; 
+    color: #e0e0e0; 
+    width: 100%; /* Force full width */
+    max-width: 100%; /* Restriction hata di */
+    padding-left: 2px; /* Left se chipkna band */
+    padding-right: 2px; 
+}
 
-/* --- MARKDOWN STYLING --- */
-.bubble p { margin-bottom: 10px; } 
-.bubble p:last-child { margin-bottom: 0; }
-.bubble strong { color: #ffffff; font-weight: 600; }
-.bubble h3 { font-size: 1.1rem; font-weight: 600; color: #ffd700; margin-top: 15px; margin-bottom: 8px; }
-.bubble ul, .bubble ol { margin-left: 20px; margin-bottom: 10px; }
-.bubble li { margin-bottom: 6px; padding-left: 5px; }
-.bubble pre { background: #1a1a1a; padding: 10px; border-radius: 8px; overflow-x: auto; margin: 10px 0; border: 1px solid #333; }
-.bubble code { font-family: monospace; color: #ff79c6; background: rgba(255,255,255,0.1); padding: 2px 4px; border-radius: 4px; }
-.bubble img { width: 100%; border-radius: 12px; margin-top: 10px; border: 1px solid #333; cursor: zoom-in; }
-
-/* --- FOOTER --- */
-footer { position: absolute; bottom: 0; width: 100%; padding: 10px 12px 20px 12px; background: rgba(0,0,0,0.9); z-index: 9999; backdrop-filter: blur(5px); }
+/* Markdown Formatting Adjustments */
+.bubble p { 
+    margin-bottom: 12px; 
+    text-align: justify; /* Paragraphs ko clean look dene ke liye */
+} 
 
 .input-zone { display: flex; align-items: flex-end; gap: 8px; position: relative; z-index: 10000; }
 

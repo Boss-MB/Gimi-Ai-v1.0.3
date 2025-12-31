@@ -12,9 +12,8 @@ document.addEventListener('DOMContentLoaded', () => {
     let recognition;
     let isAutoMode = false;
 
-    // --- FIX: Safe Markdown Parser ---
-    // Ye function check karega ki 'marked' library load hui hai ya nahi.
-    // Agar nahi hui, to plain text dikhayega taaki app crash na ho.
+    // --- SAFE MARKDOWN PARSER ---
+    // Agar internet nahi hai aur marked load nahi hua to crash nahi hoga
     const parseMarkdown = (text) => {
         try {
             if (typeof marked !== 'undefined') {
@@ -28,12 +27,13 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
-    // Welcome Message Delay
+    // Welcome Message
     setTimeout(() => pushMsg("Hello! I am ready.", 'bot'), 500);
 
+    // Basic Scroll Function (Bottom ke liye)
     const scrollDown = () => chatZone.scrollTo({ top: chatZone.scrollHeight, behavior: 'smooth' });
     
-    // Modal Logic
+    // Modal Close
     if(modal) {
         window.closeModal = () => modal.style.display = 'none';
         modal.onclick = () => modal.style.display = 'none';
@@ -48,14 +48,11 @@ document.addEventListener('DOMContentLoaded', () => {
         const audio = new Audio("data:audio/mp3;base64," + b64);
         audio.play().catch(e => console.warn("Audio blocked:", e));
         audio.onended = () => {
-            if (isAutoMode) {
-                console.log("Restarting Mic...");
-                startRecognition();
-            }
+            if (isAutoMode) startRecognition();
         };
     };
 
-    // Input & Send Button Logic
+    // Input Handling
     inpField.addEventListener('input', () => {
         if(inpField.value.trim()) btnSend.classList.add('ready');
         else btnSend.classList.remove('ready');
@@ -130,12 +127,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if(btnMic) {
         btnMic.addEventListener('click', () => {
-            // HTTPS check removed for localhost testing
             if (isAutoMode) { stopRecognition(); } 
             else { isAutoMode = true; startRecognition(); }
         });
     }
 
+    // --- MAIN MESSAGE FUNCTION (UPDATED) ---
     const pushMsg = (txt, role, isImg=false) => {
         const row = document.createElement('div');
         row.className = `msg-row row-${role}`;
@@ -145,13 +142,21 @@ document.addEventListener('DOMContentLoaded', () => {
         if(isImg) {
             bub.innerHTML = `Generated Image:<br><img src='data:image/jpeg;base64,${txt}' onclick="document.getElementById('view-full-img').src=this.src;document.getElementById('view-modal').style.display='flex'">`;
         } else {
-            // FIX: Use safe parser
             bub.innerHTML = parseMarkdown(txt);
         }
         
         row.appendChild(bub);
         chatZone.appendChild(row);
-        scrollDown();
+        
+        // --- SMART SCROLL LOGIC ---
+        // User ka msg -> Bottom scroll
+        // Bot ka msg -> Start of message (Taaki user upar se padh sake)
+        if (role === 'user') {
+            scrollDown();
+        } else {
+            row.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+
         return row; 
     };
 
@@ -190,3 +195,4 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 });
+        

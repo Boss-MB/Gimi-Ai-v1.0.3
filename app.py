@@ -51,7 +51,7 @@ configure_genai()
 
 # --- AI MODEL SETUP ---
 
-MODEL_NAME = 'gemini-1.5-flash'
+MODEL_NAME = 'gemini-2.5-flash-lite'
 
 # Advanced System Prompt with Routing Logic
 sys_instruction = """You are Gimi AI, created by Mohammad Basan.

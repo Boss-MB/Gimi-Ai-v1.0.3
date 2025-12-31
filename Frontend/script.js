@@ -1,7 +1,6 @@
 document.addEventListener('DOMContentLoaded', () => {
-    console.log("✅ New Script Loaded (Version 2)");
+    console.log("System Online.");
 
-    // Elements
     const chatZone = document.getElementById('chat-stream');
     const inpField = document.getElementById('input-msg');
     const btnSend = document.getElementById('action-send');
@@ -10,22 +9,37 @@ document.addEventListener('DOMContentLoaded', () => {
     const hiddenFile = document.getElementById('input-file-hidden');
     const modal = document.getElementById('view-modal');
 
-    // Button Check
-    if (!btnMic || !btnSend) {
-        console.error("Buttons not found! Check HTML IDs.");
-        return;
-    }
-
     let recognition;
     let isAutoMode = false;
 
+    // --- FIX: Safe Markdown Parser ---
+    // Ye function check karega ki 'marked' library load hui hai ya nahi.
+    // Agar nahi hui, to plain text dikhayega taaki app crash na ho.
+    const parseMarkdown = (text) => {
+        try {
+            if (typeof marked !== 'undefined') {
+                return marked.parse(text);
+            } else {
+                return text; 
+            }
+        } catch (e) {
+            console.error("Markdown Error:", e);
+            return text;
+        }
+    };
+
+    // Welcome Message Delay
     setTimeout(() => pushMsg("Hello! I am ready.", 'bot'), 500);
 
     const scrollDown = () => chatZone.scrollTo({ top: chatZone.scrollHeight, behavior: 'smooth' });
-    window.closeModal = () => modal.style.display = 'none';
-    modal.onclick = () => modal.style.display = 'none';
+    
+    // Modal Logic
+    if(modal) {
+        window.closeModal = () => modal.style.display = 'none';
+        modal.onclick = () => modal.style.display = 'none';
+    }
 
-    // CONTINUOUS AUDIO
+    // Audio Playback
     const playAudio = (b64) => {
         if (!b64) {
             if (isAutoMode) startRecognition();
@@ -41,7 +55,7 @@ document.addEventListener('DOMContentLoaded', () => {
         };
     };
 
-    // INPUT LOGIC
+    // Input & Send Button Logic
     inpField.addEventListener('input', () => {
         if(inpField.value.trim()) btnSend.classList.add('ready');
         else btnSend.classList.remove('ready');
@@ -51,33 +65,41 @@ document.addEventListener('DOMContentLoaded', () => {
         const txt = inpField.value.trim();
         if(txt) {
             isAutoMode = false;
-            btnMic.classList.remove('active');
+            if(btnMic) btnMic.classList.remove('active');
             stopRecognition();
             runCmd(txt, false);
         }
     };
 
-    btnSend.addEventListener('click', triggerSend);
-    inpField.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); triggerSend(); }});
-
-    // FILE ATTACH
-    btnAttach.addEventListener('click', () => {
-        console.log("Attach Clicked");
-        hiddenFile.click();
-    });
+    if(btnSend) {
+        btnSend.addEventListener('click', triggerSend);
+    }
     
-    hiddenFile.addEventListener('change', async () => {
-        if (!hiddenFile.files[0]) return;
-        const fd = new FormData();
-        fd.append('file', hiddenFile.files[0]);
-        pushMsg(`Reading ${hiddenFile.files[0].name}...`, 'user');
-        try {
-            const r = await fetch('/upload_file', { method: 'POST', body: fd });
-            const d = await r.json();
-            pushMsg(d.message, 'bot');
-        } catch { pushMsg("Upload failed.", 'bot'); }
-        hiddenFile.value = ''; 
-    });
+    if(inpField) {
+        inpField.addEventListener('keydown', (e) => { 
+            if (e.key === 'Enter') { 
+                e.preventDefault(); 
+                triggerSend(); 
+            }
+        });
+    }
+
+    // File Attachment Logic
+    if(btnAttach && hiddenFile) {
+        btnAttach.addEventListener('click', () => hiddenFile.click());
+        hiddenFile.addEventListener('change', async () => {
+            if (!hiddenFile.files[0]) return;
+            const fd = new FormData();
+            fd.append('file', hiddenFile.files[0]);
+            pushMsg(`Reading ${hiddenFile.files[0].name}...`, 'user');
+            try {
+                const r = await fetch('/upload_file', { method: 'POST', body: fd });
+                const d = await r.json();
+                pushMsg(d.message, 'bot');
+            } catch { pushMsg("Upload failed.", 'bot'); }
+            hiddenFile.value = ''; 
+        });
+    }
 
     // MIC LOGIC
     const startRecognition = () => {
@@ -89,32 +111,31 @@ document.addEventListener('DOMContentLoaded', () => {
         recognition.interimResults = false;
         recognition.started = true;
 
-        recognition.onstart = () => { btnMic.classList.add('active'); };
+        recognition.onstart = () => { if(btnMic) btnMic.classList.add('active'); };
         recognition.onend = () => { recognition.started = false; };
         recognition.onresult = (e) => {
             const t = e.results[e.results.length-1][0].transcript;
             inpField.value = t;
+            btnSend.classList.add('ready');
             runCmd(t, true); 
         };
-        try { recognition.start(); } catch(e) {}
+        try { recognition.start(); } catch(e) { console.log(e); }
     };
 
     const stopRecognition = () => {
         isAutoMode = false;
-        btnMic.classList.remove('active');
+        if(btnMic) btnMic.classList.remove('active');
         if (recognition) recognition.stop();
     };
 
-    btnMic.addEventListener('click', () => {
-        console.log("Mic Clicked");
-        if (location.protocol !== 'https:' && location.hostname !== '127.0.0.1' && location.hostname !== 'localhost') {
-            return alert("Mic requires HTTPS.");
-        }
-        if (isAutoMode) { stopRecognition(); } 
-        else { isAutoMode = true; startRecognition(); }
-    });
+    if(btnMic) {
+        btnMic.addEventListener('click', () => {
+            // HTTPS check removed for localhost testing
+            if (isAutoMode) { stopRecognition(); } 
+            else { isAutoMode = true; startRecognition(); }
+        });
+    }
 
-    // MESSAGING
     const pushMsg = (txt, role, isImg=false) => {
         const row = document.createElement('div');
         row.className = `msg-row row-${role}`;
@@ -124,7 +145,8 @@ document.addEventListener('DOMContentLoaded', () => {
         if(isImg) {
             bub.innerHTML = `Generated Image:<br><img src='data:image/jpeg;base64,${txt}' onclick="document.getElementById('view-full-img').src=this.src;document.getElementById('view-modal').style.display='flex'">`;
         } else {
-            bub.innerHTML = marked.parse(txt);
+            // FIX: Use safe parser
+            bub.innerHTML = parseMarkdown(txt);
         }
         
         row.appendChild(bub);
@@ -163,241 +185,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
         } catch (e) {
             loadRow.remove();
-            pushMsg("Error.", 'bot');
+            pushMsg("Connection error.", 'bot');
             if (isAutoMode) stopRecognition(); 
         }
     };
 });
-    inpField.addEventListener('input', () => {
-        if(inpField.value.trim()) btnSend.classList.add('ready');
-        else btnSend.classList.remove('ready');
-    });
-
-    const triggerSend = () => {
-        const txt = inpField.value.trim();
-        if(txt) {
-            isAutoMode = false;
-            btnMic.classList.remove('active');
-            stopRecognition();
-            runCmd(txt, false);
-        }
-    };
-
-    btnSend.addEventListener('click', triggerSend);
-    inpField.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); triggerSend(); }});
-
-    btnAttach.addEventListener('click', () => hiddenFile.click());
-    hiddenFile.addEventListener('change', async () => {
-        if (!hiddenFile.files[0]) return;
-        const fd = new FormData();
-        fd.append('file', hiddenFile.files[0]);
-        pushMsg(`Reading ${hiddenFile.files[0].name}...`, 'user');
-        try {
-            const r = await fetch('/upload_file', { method: 'POST', body: fd });
-            const d = await r.json();
-            pushMsg(d.message, 'bot');
-        } catch { pushMsg("Upload failed.", 'bot'); }
-        hiddenFile.value = ''; 
-    });
-
-    // MIC LOGIC
-    const startRecognition = () => {
-        if (!window.webkitSpeechRecognition) return alert("Mic not supported.");
-        if (recognition && recognition.started) return;
-
-        recognition = new webkitSpeechRecognition();
-        recognition.lang = 'en-IN'; 
-        recognition.interimResults = false;
-        recognition.started = true;
-
-        recognition.onstart = () => { btnMic.classList.add('active'); };
-        recognition.onend = () => { recognition.started = false; };
-        recognition.onresult = (e) => {
-            const t = e.results[e.results.length-1][0].transcript;
-            inpField.value = t;
-            runCmd(t, true); 
-        };
-        try { recognition.start(); } catch(e) {}
-    };
-
-    const stopRecognition = () => {
-        isAutoMode = false;
-        btnMic.classList.remove('active');
-        if (recognition) recognition.stop();
-    };
-
-    btnMic.addEventListener('click', () => {
-        if (location.protocol !== 'https:' && location.hostname !== '127.0.0.1' && location.hostname !== 'localhost') {
-            return alert("Mic requires HTTPS.");
-        }
-        if (isAutoMode) { stopRecognition(); } 
-        else { isAutoMode = true; startRecognition(); }
-    });
-
-    const pushMsg = (txt, role, isImg=false) => {
-        const row = document.createElement('div');
-        row.className = `msg-row row-${role}`;
-        const bub = document.createElement('div');
-        bub.className = `bubble bub-${role}`;
-        
-        if(isImg) {
-            bub.innerHTML = `Generated Image:<br><img src='data:image/jpeg;base64,${txt}' onclick="document.getElementById('view-full-img').src=this.src;document.getElementById('view-modal').style.display='flex'">`;
-        } else {
-            bub.innerHTML = marked.parse(txt);
-        }
-        
-        row.appendChild(bub);
-        chatZone.appendChild(row);
-        scrollDown();
-        return row; 
-    };
-
-    const runCmd = async (cmd, voiceMode) => {
-        pushMsg(cmd, 'user');
-        inpField.value = '';
-        btnSend.classList.remove('ready');
-        if (recognition) recognition.stop(); 
-
-        const loadRow = pushMsg("Thinking...", 'bot');
-
-        try {
-            const req = await fetch('/execute_command', {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({ command: cmd, is_voice: voiceMode })
-            });
-            
-            loadRow.remove();
-            const res = await req.json();
-            
-            if (res.is_image) {
-                pushMsg(res.image_data, 'bot', true);
-                if(isAutoMode) startRecognition();
-            } else {
-                pushMsg(res.response, 'bot');
-            }
-
-            if (res.audio_data) playAudio(res.audio_data);
-            else if (isAutoMode) startRecognition();
-
-        } catch (e) {
-            loadRow.remove();
-            pushMsg("Error.", 'bot');
-            if (isAutoMode) stopRecognition(); 
-        }
-    };
-});
-
-    // 1. Typing Check
-    inpField.addEventListener('input', () => {
-        if(inpField.value.trim()) btnSend.classList.add('ready');
-        else btnSend.classList.remove('ready');
-    });
-
-    // 2. Send Message
-    const triggerSend = () => {
-        const txt = inpField.value.trim();
-        if(txt) runCmd(txt, false);
-    };
-
-    btnSend.addEventListener('click', triggerSend);
-    
-    inpField.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter') {
-            e.preventDefault();
-            triggerSend();
-        }
-    });
-
-    // 3. File Upload
-    btnAttach.addEventListener('click', () => hiddenFile.click());
-
-    hiddenFile.addEventListener('change', async () => {
-        if (!hiddenFile.files[0]) return;
-        
-        const fd = new FormData();
-        fd.append('file', hiddenFile.files[0]);
-        pushMsg(`Uploading ${hiddenFile.files[0].name}...`, 'user');
-        
-        try {
-            const r = await fetch('/upload_file', { method: 'POST', body: fd });
-            const d = await r.json();
-            pushMsg(d.message, 'bot');
-        } catch (e) { pushMsg("Upload failed.", 'bot'); }
-        hiddenFile.value = ''; 
-    });
-
-    // 4. Microphone Logic
-    btnMic.addEventListener('click', () => {
-        if (location.protocol !== 'https:' && location.hostname !== 'localhost') {
-            return alert("Microphone requires HTTPS.");
-        }
-        if (!window.webkitSpeechRecognition) return alert("Browser not supported.");
-
-        if (isListening) {
-            if(recognition) recognition.stop();
-        } else {
-            recognition = new webkitSpeechRecognition();
-            recognition.lang = 'en-IN';
-            
-            recognition.onstart = () => { isListening=true; btnMic.classList.add('active'); };
-            recognition.onend = () => { isListening=false; btnMic.classList.remove('active'); };
-            recognition.onresult = (e) => {
-                const t = e.results[e.results.length-1][0].transcript;
-                inpField.value = t;
-                runCmd(t, true);
-            };
-            recognition.start();
-        }
-    });
-
-    // --- CORE LOGIC ---
-    const pushMsg = (txt, role, isImg=false) => {
-        const row = document.createElement('div');
-        row.className = `msg-row row-${role}`;
-        
-        const bub = document.createElement('div');
-        bub.className = `bubble bub-${role}`;
-        
-        if(isImg) {
-            bub.innerHTML = `Generated Image:<br><img src='data:image/jpeg;base64,${txt}' onclick="document.getElementById('view-full-img').src=this.src;document.getElementById('view-modal').style.display='flex'">`;
-        } else {
-            bub.innerHTML = marked.parse(txt);
-        }
-        
-        row.appendChild(bub);
-        chatZone.appendChild(row);
-        scrollDown();
-        return row; 
-    };
-
-    const runCmd = async (cmd, voiceMode) => {
-        pushMsg(cmd, 'user');
-        inpField.value = '';
-        btnSend.classList.remove('ready');
-
-        const loadRow = pushMsg("Thinking...", 'bot');
-
-        try {
-            const req = await fetch('/execute_command', {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({ command: cmd, is_voice: voiceMode })
-            });
-            
-            loadRow.remove();
-            
-            const res = await req.json();
-            
-            if (res.is_image) pushMsg(res.image_data, 'bot', true);
-            else pushMsg(res.response, 'bot');
-
-            if (res.audio_data) playAudio(res.audio_data);
-
-        } catch (e) {
-            loadRow.remove();
-            pushMsg("Server connection error.", 'bot');
-        }
-    };
-});
-      

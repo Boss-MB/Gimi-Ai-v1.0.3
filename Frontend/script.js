@@ -1,11 +1,5 @@
 document.addEventListener('DOMContentLoaded', () => {
-    // --- SAFE PARSER (Crash Proof) ---
-    const safeParse = (text) => {
-        if (typeof marked !== 'undefined') return marked.parse(text);
-        return text.replace(/\n/g, '<br>');
-    };
-
-    console.log("System Online.");
+    console.log("Simple JS Loaded.");
 
     const chatZone = document.getElementById('chat-stream');
     const inpField = document.getElementById('input-msg');
@@ -18,8 +12,14 @@ document.addEventListener('DOMContentLoaded', () => {
     let recognition;
     let isAutoMode = false;
 
-    // Welcome Message
-    setTimeout(() => pushMsg("Hello! I am ready.", 'bot'), 500);
+    // Simple Formatter (Jugad for formatting)
+    const formatText = (text) => {
+        if(!text) return "";
+        // Replace newlines with break tags and bold text
+        return text.replace(/\n/g, '<br>').replace(/\*\*(.*?)\*\*/g, '<b>$1</b>');
+    };
+
+    setTimeout(() => pushMsg("Hello! Ready.", 'bot'), 500);
 
     const scrollDown = () => {
         if(chatZone) chatZone.scrollTo({ top: chatZone.scrollHeight, behavior: 'smooth' });
@@ -30,39 +30,30 @@ document.addEventListener('DOMContentLoaded', () => {
         modal.onclick = () => modal.style.display = 'none';
     }
 
-    // --- NEW LOGIC: Toggle Mic/Send ---
-    // Type karte hi Send button aayega, Mic hat jayega
-    const toggleButtons = () => {
-        const txt = inpField.value.trim();
-        if(txt.length > 0) {
-            btnMic.style.display = 'none';
-            btnSend.style.display = 'flex';
-        } else {
-            btnMic.style.display = 'flex';
-            btnSend.style.display = 'none';
-        }
-    };
-
-    if(inpField) {
-        inpField.addEventListener('input', toggleButtons);
-        inpField.addEventListener('keydown', (e) => { 
-            if (e.key === 'Enter') { e.preventDefault(); triggerSend(); }
-        });
-    }
-
+    // MAIN SEND FUNCTION
     const triggerSend = () => {
         const txt = inpField.value.trim();
         if(!txt) return;
 
+        // Reset everything
         isAutoMode = false;
+        if(btnMic) btnMic.style.color = '#888';
         if(recognition) recognition.stop();
         
         runCmd(txt, false);
         inpField.value = '';
-        toggleButtons(); // Wapas Mic laao
     };
 
-    if(btnSend) btnSend.onclick = triggerSend;
+    // Events Attach Karo Simple Tareeke Se
+    if(btnSend) {
+        btnSend.onclick = triggerSend; // Direct click
+    }
+
+    if(inpField) {
+        inpField.onkeydown = (e) => { 
+            if (e.key === 'Enter') { e.preventDefault(); triggerSend(); }
+        };
+    }
 
     // Attach File
     if(btnAttach && hiddenFile) {
@@ -81,46 +72,51 @@ document.addEventListener('DOMContentLoaded', () => {
         };
     }
 
-    // Mic Logic
-    const startRecognition = () => {
-        if (!window.webkitSpeechRecognition) return alert("Mic not supported.");
-        if (recognition && recognition.started) return;
-        
-        recognition = new webkitSpeechRecognition();
-        recognition.lang = 'en-IN'; 
-        recognition.interimResults = false;
-        recognition.started = true;
-        
-        recognition.onstart = () => { btnMic.style.color = '#ff4757'; };
-        recognition.onend = () => { recognition.started = false; btnMic.style.color = '#888'; };
-        recognition.onresult = (e) => {
-            const t = e.results[e.results.length-1][0].transcript;
-            inpField.value = t;
-            toggleButtons(); 
-            runCmd(t, true); 
-        };
-        try { recognition.start(); } catch(e) {}
-    };
-
+    // Mic Logic (Simple)
     if(btnMic) {
         btnMic.onclick = () => {
-            if (isAutoMode) { 
-                isAutoMode = false; 
+            if(!window.webkitSpeechRecognition) return alert("No Mic Support");
+            
+            if(isAutoMode) {
+                // Stop
+                isAutoMode = false;
                 if(recognition) recognition.stop();
-            } else { 
-                isAutoMode = true; 
-                startRecognition(); 
+                btnMic.style.color = '#888';
+            } else {
+                // Start
+                isAutoMode = true;
+                recognition = new webkitSpeechRecognition();
+                recognition.lang = 'en-IN';
+                recognition.interimResults = false;
+                
+                recognition.onstart = () => { btnMic.style.color = '#ff4757'; };
+                recognition.onend = () => { 
+                    if(!isAutoMode) btnMic.style.color = '#888'; 
+                };
+                recognition.onresult = (e) => {
+                    const t = e.results[e.results.length-1][0].transcript;
+                    inpField.value = t;
+                    runCmd(t, true);
+                };
+                try { recognition.start(); } catch(e) {}
             }
         };
     }
 
+    // Audio Player
     const playAudio = (b64) => {
         if (!b64) { if (isAutoMode) startRecognition(); return; }
         const audio = new Audio("data:audio/mp3;base64," + b64);
         audio.play().catch(e => {});
-        audio.onended = () => { if (isAutoMode) startRecognition(); };
+        audio.onended = () => { 
+            // Restart mic if auto mode is on
+            if(isAutoMode && recognition) {
+                try { recognition.start(); } catch(e){}
+            }
+        };
     };
 
+    // Display Message
     const pushMsg = (txt, role, isImg=false) => {
         const row = document.createElement('div');
         row.className = `msg-row row-${role}`;
@@ -130,7 +126,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if(isImg) {
             bub.innerHTML = `Generated Image:<br><img src='data:image/jpeg;base64,${txt}' onclick="document.getElementById('view-full-img').src=this.src;document.getElementById('view-modal').style.display='flex'">`;
         } else {
-            bub.innerHTML = safeParse(txt);
+            bub.innerHTML = formatText(txt);
         }
         
         row.appendChild(bub);
@@ -142,6 +138,7 @@ document.addEventListener('DOMContentLoaded', () => {
         return row; 
     };
 
+    // Backend Call
     const runCmd = async (cmd, voiceMode) => {
         pushMsg(cmd, 'user');
         const loadRow = pushMsg("Thinking...", 'bot');
@@ -157,136 +154,18 @@ document.addEventListener('DOMContentLoaded', () => {
             
             if (res.is_image) {
                 pushMsg(res.image_data, 'bot', true);
-                if(isAutoMode) startRecognition();
             } else {
                 pushMsg(res.response, 'bot');
             }
 
             if (res.audio_data) playAudio(res.audio_data);
-            else if (isAutoMode) startRecognition();
 
         } catch (e) {
             loadRow.remove();
-            pushMsg("Error connecting.", 'bot');
+            pushMsg("Connection Error.", 'bot');
         }
     };
 });
-    inpField.addEventListener('input', () => {
-        const txt = inpField.value.trim();
-        if(txt) {
-            btnSend.classList.add('ready');
-        } else {
-            btnSend.classList.remove('ready');
-        }
-    });
-
-    const triggerSend = () => {
-        const txt = inpField.value.trim();
-        if(!txt) return; // Empty text mat bhejo
-
-        isAutoMode = false;
-        btnMic.classList.remove('active');
-        stopRecognition();
-        
-        runCmd(txt, false);
-        btnSend.classList.remove('ready');
-    };
-
-    // DIRECT CLICK LISTENERS
-    btnSend.onclick = triggerSend;
-    inpField.onkeydown = (e) => { 
-        if (e.key === 'Enter') { e.preventDefault(); triggerSend(); }
-    };
-
-    // ATTACH
-    if(btnAttach && hiddenFile) {
-        btnAttach.onclick = () => hiddenFile.click();
-        hiddenFile.onchange = async () => {
-            if (!hiddenFile.files[0]) return;
-            const fd = new FormData();
-            fd.append('file', hiddenFile.files[0]);
-            pushMsg(`Reading ${hiddenFile.files[0].name}...`, 'user');
-            try {
-                const r = await fetch('/upload_file', { method: 'POST', body: fd });
-                const d = await r.json();
-                pushMsg(d.message, 'bot');
-            } catch { pushMsg("Upload failed.", 'bot'); }
-            hiddenFile.value = ''; 
-        };
-    }
-
-    // MIC SETUP
-    const startRecognition = () => {
-        if (!window.webkitSpeechRecognition) return alert("Mic Error");
-        if (recognition && recognition.started) return;
-        recognition = new webkitSpeechRecognition();
-        recognition.lang = 'en-IN'; 
-        recognition.interimResults = false;
-        recognition.started = true;
-        recognition.onstart = () => { btnMic.classList.add('active'); };
-        recognition.onend = () => { recognition.started = false; };
-        recognition.onresult = (e) => {
-            const t = e.results[e.results.length-1][0].transcript;
-            inpField.value = t;
-            btnSend.classList.add('ready');
-            runCmd(t, true); 
-        };
-        try { recognition.start(); } catch(e) {}
-    };
-
-    const stopRecognition = () => {
-        isAutoMode = false;
-        btnMic.classList.remove('active');
-        if (recognition) recognition.stop();
-    };
-
-    btnMic.onclick = () => {
-        if (isAutoMode) { stopRecognition(); } 
-        else { isAutoMode = true; startRecognition(); }
-    };
-
-    // MSG HANDLER
-    const pushMsg = (txt, role, isImg=false) => {
-        const row = document.createElement('div');
-        row.className = `msg-row row-${role}`;
-        const bub = document.createElement('div');
-        bub.className = `bubble bub-${role}`;
-        
-        if(isImg) {
-            bub.innerHTML = `Generated Image:<br><img src='data:image/jpeg;base64,${txt}' onclick="document.getElementById('view-full-img').src=this.src;document.getElementById('view-modal').style.display='flex'">`;
-        } else {
-            // Simple Parse
-            bub.innerHTML = (window.marked) ? window.marked.parse(txt) : txt;
-        }
-        
-        row.appendChild(bub);
-        chatZone.appendChild(row);
-        
-        if (role === 'user') scrollDown();
-        else row.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        
-        return row; 
-    };
-
-    const runCmd = async (cmd, voiceMode) => {
-        pushMsg(cmd, 'user');
-        inpField.value = '';
-        const loadRow = pushMsg("Thinking...", 'bot');
-        try {
-            const req = await fetch('/execute_command', {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({ command: cmd, is_voice: voiceMode })
-            });
-            loadRow.remove();
-            const res = await req.json();
-            if (res.is_image) {
-                pushMsg(res.image_data, 'bot', true);
-                if(isAutoMode) startRecognition();
-            } else {
-                pushMsg(res.response, 'bot');
-            }
-            if (res.audio_data) playAudio(res.audio_data);
             else if (isAutoMode) startRecognition();
         } catch (e) {
             loadRow.remove();

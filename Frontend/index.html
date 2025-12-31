@@ -6,11 +6,9 @@
     <title>Gimi AI</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-    
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}?v=2">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body>
-
     <div class="main-container">
         <header>
             <div class="brand">
@@ -25,28 +23,21 @@
 
         <footer>
             <input type="file" id="input-file-hidden" style="display: none;">
-            
             <div class="input-zone">
-                <button class="btn-round" id="action-attach">
-                    <i class="fa-solid fa-plus"></i>
-                </button>
-                
+                <button class="btn-round" id="action-attach"><i class="fa-solid fa-plus"></i></button>
                 <div class="text-capsule">
                     <input type="text" id="input-msg" placeholder="Message" autocomplete="off">
                     <i class="fa-solid fa-microphone icon-mic" id="action-mic"></i>
                 </div>
-
-                <button class="btn-round btn-send" id="action-send">
-                    <i class="fa-solid fa-arrow-up"></i>
-                </button>
+                <button class="btn-round btn-send" id="action-send"><i class="fa-solid fa-arrow-up"></i></button>
             </div>
         </footer>
     </div>
-
+    
     <div id="view-modal" class="modal-overlay">
         <img class="modal-img" id="view-full-img">
     </div>
-
-    <script src="{{ url_for('static', filename='script.js') }}?v=2"></script>
+    
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
 </body>
 </html>
